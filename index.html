@@ -1,725 +1,550 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Football Frenzy - AI Mobile Game</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>بازی فوتبال نئونی - نسخه بهبود یافته</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Vazir:wght@400;700&display=swap');
         
         body {
-            font-family: 'Poppins', sans-serif;
-            touch-action: manipulation;
-            overflow: hidden;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            font-family: 'Vazir', sans-serif;
+            background: linear-gradient(45deg, #0a0a0a, #1a0a1a, #0a1a1a);
             background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            animation: gradientShift 15s ease infinite;
         }
         
-        @keyframes gradientBG {
+        @keyframes gradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
         
-        #gameCanvas {
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+        .neon-glow {
+            box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff, 0 0 60px #00ffff;
         }
         
-        .goal-effect {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.7);
-            z-index: 10;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            font-size: 3rem;
-            font-weight: bold;
-            color: #FF5722;
-            animation: pulse 1s infinite;
+        .neon-text {
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
         }
         
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.7; }
-            100% { transform: scale(1); opacity: 1; }
+        .game-canvas {
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 30px #00ffff, inset 0 0 30px rgba(0, 255, 255, 0.1);
+            background: radial-gradient(circle at center, #001a1a, #000a0a);
         }
         
-        .particle {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: white;
+        .mobile-controls {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
             border-radius: 50%;
-            pointer-events: none;
+            backdrop-filter: blur(10px);
+        }
+        
+        .score-board {
+            background: linear-gradient(45deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+            border: 2px solid #00ffff;
+            backdrop-filter: blur(15px);
+        }
+        
+        .developer-tag {
+            background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .control-button {
+            background: rgba(0, 255, 255, 0.2);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            transition: all 0.3s ease;
+        }
+        
+        .control-button:hover, .control-button:active {
+            background: rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 20px #00ffff;
+            transform: scale(1.05);
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen text-white">
-    <div class="text-center mb-4">
-        <h1 class="text-3xl md:text-4xl font-bold mb-2">⚽ Football Frenzy ⚽</h1>
-        <div class="flex justify-center gap-4 mb-4">
-            <div class="bg-white/20 rounded-lg px-4 py-2">
-                <span class="font-bold" id="playerScore">0</span> - <span class="font-bold" id="aiScore">0</span>
-            </div>
-            <div class="bg-white/20 rounded-lg px-4 py-2">
-                Time: <span class="font-bold" id="timer">90</span>
+<body class="min-h-screen text-white overflow-x-hidden">
+    <!-- Header -->
+    <div class="text-center py-4">
+        <h1 class="text-4xl md:text-6xl font-bold neon-text mb-2">⚽ بازی فوتبال نئونی ⚽</h1>
+        <p class="text-lg text-gray-300">نسخه بهبود یافته برای موبایل</p>
+    </div>
+
+    <!-- Game Container -->
+    <div class="flex flex-col items-center px-4">
+        <!-- Score Board -->
+        <div class="score-board rounded-lg p-4 mb-4 text-center">
+            <div class="flex justify-between items-center w-full max-w-md">
+                <div class="text-center">
+                    <p class="text-sm text-gray-300">شما</p>
+                    <p id="playerScore" class="text-3xl font-bold neon-text">0</p>
+                </div>
+                <div class="text-2xl">VS</div>
+                <div class="text-center">
+                    <p class="text-sm text-gray-300">کامپیوتر</p>
+                    <p id="aiScore" class="text-3xl font-bold text-pink-400">0</p>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="relative">
-        <canvas id="gameCanvas" width="300" height="500" class="w-full max-w-md"></canvas>
-        
-        <div id="goalEffect" class="goal-effect">
-            GOAL!
+
+        <!-- Game Canvas -->
+        <canvas id="gameCanvas" class="game-canvas rounded-lg mb-4" width="800" height="400"></canvas>
+
+        <!-- Mobile Controls -->
+        <div class="md:hidden grid grid-cols-3 gap-4 mb-4 w-full max-w-xs">
+            <div></div>
+            <button id="upBtn" class="mobile-controls control-button h-16 w-16 text-2xl">↑</button>
+            <div></div>
+            <button id="leftBtn" class="mobile-controls control-button h-16 w-16 text-2xl">←</button>
+            <button id="downBtn" class="mobile-controls control-button h-16 w-16 text-2xl">↓</button>
+            <button id="rightBtn" class="mobile-controls control-button h-16 w-16 text-2xl">→</button>
         </div>
-        
+
+        <!-- Game Controls -->
+        <div class="flex flex-wrap justify-center gap-4 mb-4">
+            <button id="startBtn" class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition">شروع بازی</button>
+            <button id="pauseBtn" class="px-6 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg font-bold transition">توقف</button>
+            <button id="resetBtn" class="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition">ریست</button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="text-center max-w-2xl mb-8">
+            <h3 class="text-xl font-bold mb-2 text-cyan-400">راهنمای بازی:</h3>
+            <p class="text-gray-300 mb-2">
+                <strong>کامپیوتر:</strong> کلیدهای WASD یا پیکان‌ها | <strong>موبایل:</strong> دکمه‌های لمسی
+            </p>
+            <p class="text-gray-300">هدف: توپ را به دروازه حریف برسانید! اولین نفری که 5 گل بزند برنده است!</p>
+        </div>
     </div>
-    
-    <div class="mt-6 flex gap-4">
-        <button id="startBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-full transition-all">
-            Start Game
-        </button>
-        <button id="resetBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-full transition-all">
-            Reset
-        </button>
+
+    <!-- Developer Credit -->
+    <div class="text-center py-8">
+        <p class="text-lg">
+            <span class="text-gray-400">برنامه‌نویس:</span> 
+            <span class="developer-tag font-bold text-xl">عرفان علیخانی</span>
+        </p>
     </div>
-    
-    <div class="mt-6 text-center max-w-md px-4">
-        <p class="text-sm opacity-80">Use WASD to move and Arrow Keys to kick. Score more goals than AI in 90 seconds!</p>
-    </div>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Game elements
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const playerScoreEl = document.getElementById('playerScore');
-            const aiScoreEl = document.getElementById('aiScore');
-            const timerEl = document.getElementById('timer');
-            const startBtn = document.getElementById('startBtn');
-            const resetBtn = document.getElementById('resetBtn');
-            const goalEffect = document.getElementById('goalEffect');
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Responsive canvas
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(container.clientWidth - 32, 800);
+            const aspectRatio = 800 / 400;
             
-            // Adjust canvas size for mobile
-            function resizeCanvas() {
-                const maxWidth = Math.min(500, window.innerWidth - 40);
-                const ratio = 500 / 300;
-                canvas.width = maxWidth;
-                canvas.height = maxWidth * ratio;
-            }
-            
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-            
-            // Game state
-            let gameRunning = false;
-            let playerScore = 0;
-            let aiScore = 0;
-            let gameTime = 90;
-            let timerInterval;
-            
-            // Game objects
-            const player = {
-                x: canvas.width / 2,
-                y: canvas.height - 50,
-                radius: 20,
-                speed: 5,
-                color: '#2196F3',
-                dx: 0,
-                dy: 0
-            };
-            
-            const aiPlayer = {
-                x: canvas.width / 2,
-                y: 50,
-                radius: 20,
-                speed: 4,
-                color: '#FF5722',
-                dx: 0,
-                dy: 0
-            };
-            
-            const ball = {
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                radius: 12,
-                color: '#FFFFFF',
-                dx: 0,
-                dy: 0,
-                friction: 0.99
-            };
-            
-            const goals = [
-                { x: canvas.width / 2 - 50, y: 0, width: 100, height: 20, color: '#FFEB3B' }, // Top goal (AI)
-                { x: canvas.width / 2 - 50, y: canvas.height - 20, width: 100, height: 20, color: '#FFEB3B' } // Bottom goal (Player)
-            ];
-            
-            const field = {
-                width: canvas.width,
-                height: canvas.height,
-                center: { x: canvas.width / 2, y: canvas.height / 2 },
-                centerCircleRadius: 50,
-                centerSpotRadius: 5,
-                penaltyArea: {
-                    width: 100,
-                    height: 40,
-                    playerY: canvas.height - 40,
-                    aiY: 40
-                }
-            };
-            
-            // Keyboard controls
-            const keys = {
-                w: false,
-                a: false,
-                s: false,
-                d: false,
-                up: false,
-                down: false,
-                left: false,
-                right: false
-            };
-            
-            // Initialize keyboard controls
-            function initControls() {
-                document.addEventListener('keydown', (e) => {
-                    if (e.key.toLowerCase() === 'w') keys.w = true;
-                    if (e.key.toLowerCase() === 'a') keys.a = true;
-                    if (e.key.toLowerCase() === 's') keys.s = true;
-                    if (e.key.toLowerCase() === 'd') keys.d = true;
-                    if (e.key === 'ArrowUp') keys.up = true;
-                    if (e.key === 'ArrowDown') keys.down = true;
-                    if (e.key === 'ArrowLeft') keys.left = true;
-                    if (e.key === 'ArrowRight') keys.right = true;
-                });
-                
-                document.addEventListener('keyup', (e) => {
-                    if (e.key.toLowerCase() === 'w') keys.w = false;
-                    if (e.key.toLowerCase() === 'a') keys.a = false;
-                    if (e.key.toLowerCase() === 's') keys.s = false;
-                    if (e.key.toLowerCase() === 'd') keys.d = false;
-                    if (e.key === 'ArrowUp') keys.up = false;
-                    if (e.key === 'ArrowDown') keys.down = false;
-                    if (e.key === 'ArrowLeft') keys.left = false;
-                    if (e.key === 'ArrowRight') keys.right = false;
-                });
-            }
-            
-            function handlePlayerMovement() {
-                if (!gameRunning) return;
-                
-                // Reset movement
-                player.dx = 0;
-                player.dy = 0;
-                
-                // Movement controls (WASD)
-                if (keys.w) player.dy = -player.speed;
-                if (keys.s) player.dy = player.speed;
-                if (keys.a) player.dx = -player.speed;
-                if (keys.d) player.dx = player.speed;
-                
-                // Normalize diagonal movement
-                if (player.dx !== 0 && player.dy !== 0) {
-                    player.dx *= 0.7071; // 1/sqrt(2)
-                    player.dy *= 0.7071;
-                }
-                
-                // Kick controls (Arrow Keys)
-                if ((keys.up || keys.down || keys.left || keys.right) && 
-                    Math.sqrt(Math.pow(player.x - ball.x, 2) + Math.pow(player.y - ball.y, 2)) < player.radius + ball.radius + 10) {
-                    
-                    let kickX = 0;
-                    let kickY = 0;
-                    
-                    if (keys.up) kickY = -1;
-                    if (keys.down) kickY = 1;
-                    if (keys.left) kickX = -1;
-                    if (keys.right) kickX = 1;
-                    
-                    // Normalize diagonal kick
-                    if (kickX !== 0 && kickY !== 0) {
-                        kickX *= 0.7071;
-                        kickY *= 0.7071;
-                    }
-                    
-                    ball.dx = kickX * 10;
-                    ball.dy = kickY * 10;
-                    
-                    // Add particles for kick effect
-                    createParticles(ball.x, ball.y, 10, '#FFFFFF');
-                }
-            }
-            
-            // Particles system
-            let particles = [];
-            
-            function createParticles(x, y, count, color) {
-                for (let i = 0; i < count; i++) {
-                    particles.push({
-                        x: x,
-                        y: y,
-                        radius: Math.random() * 4 + 2,
-                        color: color,
-                        dx: (Math.random() - 0.5) * 4,
-                        dy: (Math.random() - 0.5) * 4,
-                        life: 30 + Math.random() * 20,
-                        opacity: 1
-                    });
-                }
-            }
-            
-            function updateParticles() {
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    const p = particles[i];
-                    p.x += p.dx;
-                    p.y += p.dy;
-                    p.life--;
-                    p.opacity = p.life / 50;
-                    
-                    if (p.life <= 0) {
-                        particles.splice(i, 1);
-                    }
-                }
-            }
-            
-            // Game functions
-            function startGame() {
-                if (gameRunning) return;
-                
-                // Countdown before game starts
-                let countdown = 3;
-                const countdownEl = document.createElement('div');
-                countdownEl.className = 'goal-effect';
-                countdownEl.style.fontSize = '5rem';
-                countdownEl.style.color = '#FFFFFF';
-                countdownEl.textContent = countdown;
-                document.querySelector('.relative').appendChild(countdownEl);
-                
-                const countdownInterval = setInterval(() => {
-                    countdown--;
-                    countdownEl.textContent = countdown;
-                    
-                    if (countdown <= 0) {
-                        clearInterval(countdownInterval);
-                        countdownEl.remove();
-                        gameRunning = true;
-                        requestAnimationFrame(gameLoop);
-                    }
-                }, 1000);
-                playerScore = 0;
-                aiScore = 0;
-                gameTime = 90;
-                
-                playerScoreEl.textContent = playerScore;
-                aiScoreEl.textContent = aiScore;
-                timerEl.textContent = gameTime;
-                
-                // Reset positions
-                player.x = canvas.width / 2;
-                player.y = canvas.height - 50;
-                aiPlayer.x = canvas.width / 2;
-                aiPlayer.y = 50;
-                ball.x = canvas.width / 2;
-                ball.y = canvas.height / 2;
-                ball.dx = 0;
-                ball.dy = 0;
-                
-                // Start timer
-                clearInterval(timerInterval);
-                timerInterval = setInterval(() => {
-                    gameTime--;
-                    timerEl.textContent = gameTime;
-                    
-                    if (gameTime <= 0) {
-                        endGame();
-                    }
-                }, 1000);
-                
-                // Start game loop
-                requestAnimationFrame(gameLoop);
-            }
-            
-            function resetGame() {
-                gameRunning = false;
-                clearInterval(timerInterval);
-                
-                playerScore = 0;
-                aiScore = 0;
-                gameTime = 90;
-                
-                playerScoreEl.textContent = playerScore;
-                aiScoreEl.textContent = aiScore;
-                timerEl.textContent = gameTime;
-                
-                // Reset positions
-                player.x = canvas.width / 2;
-                player.y = canvas.height - 50;
-                aiPlayer.x = canvas.width / 2;
-                aiPlayer.y = 50;
-                ball.x = canvas.width / 2;
-                ball.y = canvas.height / 2;
-                ball.dx = 0;
-                ball.dy = 0;
-                
-                // Reset joysticks
-                leftKnob.style.transform = 'translate(0, 0)';
-                rightKnob.style.transform = 'translate(0, 0)';
-                
-                // Draw initial state
-                draw();
-            }
-            
-            function endGame() {
-                gameRunning = false;
-                clearInterval(timerInterval);
-                
-                // Show winner
-                setTimeout(() => {
-                    if (playerScore > aiScore) {
-                        alert('You win! Final score: ' + playerScore + '-' + aiScore);
-                    } else if (aiScore > playerScore) {
-                        alert('AI wins! Final score: ' + aiScore + '-' + playerScore);
-                    } else {
-                        alert('It\'s a draw! Final score: ' + playerScore + '-' + aiScore);
-                    }
-                }, 500);
-            }
-            
-            function checkCollision(obj1, obj2) {
-                const dx = obj1.x - obj2.x;
-                const dy = obj1.y - obj2.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                return distance < obj1.radius + obj2.radius;
-            }
-            
-            function checkGoal() {
-                // Check player goal (top)
-                if (ball.y - ball.radius <= goals[0].y + goals[0].height && 
-                    ball.x >= goals[0].x && 
-                    ball.x <= goals[0].x + goals[0].width) {
-                    playerScore++;
-                    playerScoreEl.textContent = playerScore;
-                    showGoalEffect();
-                    resetAfterGoal();
-                    return 'player';
-                }
-                
-                // Check AI goal (bottom)
-                if (ball.y + ball.radius >= goals[1].y && 
-                    ball.x >= goals[1].x && 
-                    ball.x <= goals[1].x + goals[1].width) {
-                    aiScore++;
-                    aiScoreEl.textContent = aiScore;
-                    showGoalEffect();
-                    resetAfterGoal();
-                    return 'ai';
-                }
-                
-                return false;
-            }
-            
-            function showGoalEffect() {
-                goalEffect.style.display = 'flex';
-                setTimeout(() => {
-                    goalEffect.style.display = 'none';
-                }, 1000);
-            }
-            
-            function resetAfterGoal() {
-                // Reset positions
-                player.x = canvas.width / 2;
-                player.y = canvas.height - 50;
-                aiPlayer.x = canvas.width / 2;
-                aiPlayer.y = 50;
-                ball.x = canvas.width / 2;
-                ball.y = canvas.height / 2;
-                ball.dx = 0;
-                ball.dy = 0;
-                
-                // Reset joysticks
-                leftKnob.style.transform = 'translate(0, 0)';
-                rightKnob.style.transform = 'translate(0, 0)';
-                player.dx = 0;
-                player.dy = 0;
-                
-                // Pause briefly
-                gameRunning = false;
-                setTimeout(() => {
-                    gameRunning = true;
-                }, 1500);
-            }
-            
-            // AI logic
-            function updateAI() {
-                if (!gameRunning) return;
-                
-                // Calculate distance and direction to ball
-                const ballDirectionX = ball.x - aiPlayer.x;
-                const ballDirectionY = ball.y - aiPlayer.y;
-                const distanceToBall = Math.sqrt(ballDirectionX * ballDirectionX + ballDirectionY * ballDirectionY);
-                
-                // Calculate intercept point based on ball velocity
-                const interceptX = ball.x + ball.dx * 0.5;
-                const interceptY = ball.y + ball.dy * 0.5;
-                
-                // Move toward intercept point
-                const targetX = interceptX;
-                const targetY = interceptY;
-                const targetDirectionX = targetX - aiPlayer.x;
-                const targetDirectionY = targetY - aiPlayer.y;
-                const targetDistance = Math.sqrt(targetDirectionX * targetDirectionX + targetDirectionY * targetDirectionY);
-                
-                if (targetDistance > aiPlayer.radius + ball.radius + 15) {
-                    aiPlayer.dx = (targetDirectionX / targetDistance) * aiPlayer.speed;
-                    aiPlayer.dy = (targetDirectionY / targetDistance) * aiPlayer.speed;
-                } else {
-                    // Close enough to kick
-                    aiPlayer.dx = 0;
-                    aiPlayer.dy = 0;
-                    
-                    // Kick toward player's goal with some randomness
-                    if (Math.random() < 0.08) {
-                        const targetX = canvas.width / 2 + (Math.random() - 0.5) * 100;
-                        const targetY = canvas.height;
-                        
-                        const kickDirectionX = targetX - ball.x;
-                        const kickDirectionY = targetY - ball.y;
-                        const kickDistance = Math.sqrt(kickDirectionX * kickDirectionX + kickDirectionY * kickDirectionY);
-                        
-                        const power = 6 + Math.random() * 4;
-                        ball.dx = (kickDirectionX / kickDistance) * power;
-                        ball.dy = (kickDirectionY / kickDistance) * power;
-                        
-                        // Add particles for kick effect
-                        createParticles(ball.x, ball.y, 15, '#FF5722');
-                    }
-                }
-                
-                // Update AI position
-                aiPlayer.x += aiPlayer.dx;
-                aiPlayer.y += aiPlayer.dy;
-                
-                // Keep AI within bounds
-                aiPlayer.x = Math.max(aiPlayer.radius, Math.min(canvas.width - aiPlayer.radius, aiPlayer.x));
-                aiPlayer.y = Math.max(aiPlayer.radius, Math.min(canvas.height / 2 - 50, aiPlayer.y));
-            }
-            
-            function update() {
-                if (!gameRunning) return;
-                
-                // Handle player movement
-                handlePlayerMovement();
-                
-                // Update player position
-                player.x += player.dx;
-                player.y += player.dy;
-                
-                // Keep player within bounds
-                player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-                player.y = Math.max(canvas.height / 2 + 50, Math.min(canvas.height - player.radius, player.y));
-                
-                // Update AI
-                updateAI();
-                
-                // Update ball physics
-                ball.x += ball.dx;
-                ball.y += ball.dy;
-                // Apply friction with air resistance effect
-                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
-                const frictionFactor = ball.friction * (1 - speed * 0.002);
-                ball.dx *= frictionFactor;
-                ball.dy *= frictionFactor;
-                
-                // Slow down ball when speed is very small
-                if (Math.abs(ball.dx) < 0.05) ball.dx = 0;
-                if (Math.abs(ball.dy) < 0.05) ball.dy = 0;
-                
-                // Ball collisions with walls
-                if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= canvas.width) {
-                    ball.dx = -ball.dx * 0.8;
-                    createParticles(ball.x, ball.y, 5, '#FFFFFF');
-                }
-                
-                if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= canvas.height) {
-                    ball.dy = -ball.dy * 0.8;
-                    createParticles(ball.x, ball.y, 5, '#FFFFFF');
-                }
-                
-                // Ball collisions with players
-                if (checkCollision(ball, player)) {
-                    // Simple bounce effect
-                    const angle = Math.atan2(ball.y - player.y, ball.x - player.x);
-                    const power = Math.sqrt(player.dx * player.dx + player.dy * player.dy) * 0.5 + 2;
-                    
-                    ball.dx = Math.cos(angle) * power;
-                    ball.dy = Math.sin(angle) * power;
-                    
-                    createParticles(ball.x, ball.y, 8, '#2196F3');
-                }
-                
-                if (checkCollision(ball, aiPlayer)) {
-                    // Simple bounce effect
-                    const angle = Math.atan2(ball.y - aiPlayer.y, ball.x - aiPlayer.x);
-                    const power = Math.sqrt(aiPlayer.dx * aiPlayer.dx + aiPlayer.dy * aiPlayer.dy) * 0.5 + 2;
-                    
-                    ball.dx = Math.cos(angle) * power;
-                    ball.dy = Math.sin(angle) * power;
-                    
-                    createParticles(ball.x, ball.y, 8, '#FF5722');
-                }
-                
-                // Check for goals
-                checkGoal();
-                
-                // Update particles
-                updateParticles();
-            }
-            
-            function drawField() {
-                // Field background with grass texture
-                ctx.fillStyle = '#4CAF50';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Draw grass lines
-                ctx.strokeStyle = 'rgba(0, 100, 0, 0.3)';
-                ctx.lineWidth = 1;
-                for (let i = 0; i < canvas.height; i += 5) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, i);
-                    ctx.lineTo(canvas.width, i);
-                    ctx.stroke();
-                }
-                
-                // Field markings
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 3;
-                ctx.setLineDash([]);
-                
-                // Outer lines
-                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-                
-                // Center line
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, 10);
-                ctx.lineTo(canvas.width / 2, canvas.height - 10);
-                ctx.stroke();
-                
-                // Center circle
-                ctx.beginPath();
-                ctx.arc(field.center.x, field.center.y, field.centerCircleRadius, 0, Math.PI * 2);
-                ctx.stroke();
-                
-                // Center spot
-                ctx.beginPath();
-                ctx.arc(field.center.x, field.center.y, field.centerSpotRadius, 0, Math.PI * 2);
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fill();
-                
-                // Penalty areas
-                ctx.strokeRect(
-                    canvas.width / 2 - field.penaltyArea.width / 2,
-                    10,
-                    field.penaltyArea.width,
-                    field.penaltyArea.height
-                );
-                
-                ctx.strokeRect(
-                    canvas.width / 2 - field.penaltyArea.width / 2,
-                    canvas.height - 10 - field.penaltyArea.height,
-                    field.penaltyArea.width,
-                    field.penaltyArea.height
-                );
-                
-                // Goals
-                ctx.fillStyle = goals[0].color;
-                ctx.fillRect(goals[0].x, goals[0].y, goals[0].width, goals[0].height);
-                
-                ctx.fillStyle = goals[1].color;
-                ctx.fillRect(goals[1].x, goals[1].y, goals[1].width, goals[1].height);
-            }
-            
-            function draw() {
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                // Draw field
-                drawField();
-                
-                // Draw players
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-                ctx.fillStyle = player.color;
-                ctx.fill();
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.arc(aiPlayer.x, aiPlayer.y, aiPlayer.radius, 0, Math.PI * 2);
-                ctx.fillStyle = aiPlayer.color;
-                ctx.fill();
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
-                // Draw ball
-                ctx.beginPath();
-                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-                ctx.fillStyle = ball.color;
-                ctx.fill();
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-                
-                // Draw black pentagon pattern on ball
-                ctx.fillStyle = '#000000';
-                for (let i = 0; i < 5; i++) {
-                    const angle = (i * 2 * Math.PI / 5) + Math.PI / 2;
-                    const x = ball.x + Math.cos(angle) * ball.radius * 0.6;
-                    const y = ball.y + Math.sin(angle) * ball.radius * 0.6;
-                    
-                    ctx.beginPath();
-                    ctx.arc(x, y, ball.radius * 0.2, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                
-                // Draw particles
-                particles.forEach(p => {
-                    ctx.globalAlpha = p.opacity;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color;
-                    ctx.fill();
-                });
-                ctx.globalAlpha = 1;
-            }
-            
-            function gameLoop() {
-                update();
-                draw();
-                
-                if (gameRunning) {
-                    requestAnimationFrame(gameLoop);
-                }
-            }
-            
-            // Event listeners
-            startBtn.addEventListener('click', startGame);
-            resetBtn.addEventListener('click', resetGame);
-            
-            // Initialize controls
-            initControls();
-            
-            // Draw initial state
-            draw();
+            canvas.style.width = maxWidth + 'px';
+            canvas.style.height = (maxWidth / aspectRatio) + 'px';
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game variables
+        let gameRunning = false;
+        let playerScore = 0;
+        let aiScore = 0;
+        const WINNING_SCORE = 5;
+
+        // Game objects
+        const player = {
+            x: 100,
+            y: 200,
+            radius: 25,
+            speed: 5,
+            color: '#00ffff'
+        };
+
+        const ai = {
+            x: 700,
+            y: 200,
+            radius: 25,
+            speed: 3.5,
+            color: '#ff00ff'
+        };
+
+        const ball = {
+            x: 400,
+            y: 200,
+            radius: 15,
+            dx: 4,
+            dy: 2,
+            color: '#ffffff',
+            trail: []
+        };
+
+        // Goals
+        const leftGoal = { x: 0, y: 120, width: 30, height: 160 };
+        const rightGoal = { x: 770, y: 120, width: 30, height: 160 };
+
+        // Input handling
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
         });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Mobile controls
+        const mobileControls = {
+            up: false,
+            down: false,
+            left: false,
+            right: false
+        };
+
+        function setupMobileControls() {
+            const buttons = {
+                upBtn: 'up',
+                downBtn: 'down',
+                leftBtn: 'left',
+                rightBtn: 'right'
+            };
+
+            Object.keys(buttons).forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                const direction = buttons[btnId];
+                
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    mobileControls[direction] = true;
+                });
+                
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    mobileControls[direction] = false;
+                });
+                
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    mobileControls[direction] = true;
+                });
+                
+                btn.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    mobileControls[direction] = false;
+                });
+            });
+        }
+
+        setupMobileControls();
+
+        // Drawing functions
+        function drawCircle(obj) {
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+            ctx.fillStyle = obj.color;
+            ctx.fill();
+            ctx.strokeStyle = obj.color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Neon glow effect
+            ctx.shadowColor = obj.color;
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawField() {
+            // Field background
+            ctx.fillStyle = 'rgba(0, 50, 0, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Center line
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(400, 0);
+            ctx.lineTo(400, 400);
+            ctx.stroke();
+            
+            // Center circle
+            ctx.beginPath();
+            ctx.arc(400, 200, 80, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Goals
+            ctx.fillStyle = '#ff006e';
+            ctx.fillRect(leftGoal.x, leftGoal.y, leftGoal.width, leftGoal.height);
+            ctx.fillRect(rightGoal.x, rightGoal.y, rightGoal.width, rightGoal.height);
+            
+            // Goal glow
+            ctx.shadowColor = '#ff006e';
+            ctx.shadowBlur = 15;
+            ctx.fillRect(leftGoal.x, leftGoal.y, leftGoal.width, leftGoal.height);
+            ctx.fillRect(rightGoal.x, rightGoal.y, rightGoal.width, rightGoal.height);
+            ctx.shadowBlur = 0;
+        }
+
+        function drawBallTrail() {
+            for (let i = 0; i < ball.trail.length; i++) {
+                const alpha = (i + 1) / ball.trail.length * 0.5;
+                const pos = ball.trail[i];
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ball.radius * alpha, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fill();
+            }
+        }
+
+        // Game logic
+        function updatePlayer() {
+            if (keys['w'] || keys['arrowup'] || mobileControls.up) {
+                player.y = Math.max(player.radius, player.y - player.speed);
+            }
+            if (keys['s'] || keys['arrowdown'] || mobileControls.down) {
+                player.y = Math.min(canvas.height - player.radius, player.y + player.speed);
+            }
+            if (keys['a'] || keys['arrowleft'] || mobileControls.left) {
+                player.x = Math.max(player.radius, player.x - player.speed);
+            }
+            if (keys['d'] || keys['arrowright'] || mobileControls.right) {
+                player.x = Math.min(canvas.width - player.radius, player.x + player.speed);
+            }
+        }
+
+        function updateAI() {
+            // Smart AI that predicts ball movement
+            const predictedBallX = ball.x + ball.dx * 30;
+            const predictedBallY = ball.y + ball.dy * 30;
+            
+            // Move towards predicted ball position
+            const dx = predictedBallX - ai.x;
+            const dy = predictedBallY - ai.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 5) {
+                ai.x += (dx / distance) * ai.speed;
+                ai.y += (dy / distance) * ai.speed;
+            }
+            
+            // Keep AI within bounds
+            ai.x = Math.max(ai.radius, Math.min(canvas.width - ai.radius, ai.x));
+            ai.y = Math.max(ai.radius, Math.min(canvas.height - ai.radius, ai.y));
+        }
+
+        function updateBall() {
+            // Update trail
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > 10) {
+                ball.trail.shift();
+            }
+            
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Bounce off top and bottom walls
+            if (ball.y <= ball.radius || ball.y >= canvas.height - ball.radius) {
+                ball.dy = -ball.dy;
+                createParticles(ball.x, ball.y);
+            }
+            
+            // Check collision with players
+            checkPlayerCollision(player);
+            checkPlayerCollision(ai);
+            
+            // Check goals
+            if (ball.x <= leftGoal.x + leftGoal.width && 
+                ball.y >= leftGoal.y && 
+                ball.y <= leftGoal.y + leftGoal.height) {
+                aiScore++;
+                updateScore();
+                resetBall();
+                showGoalEffect();
+            }
+            
+            if (ball.x >= rightGoal.x && 
+                ball.y >= rightGoal.y && 
+                ball.y <= rightGoal.y + rightGoal.height) {
+                playerScore++;
+                updateScore();
+                resetBall();
+                showGoalEffect();
+            }
+            
+            // Keep ball in bounds (sides)
+            if (ball.x <= ball.radius) {
+                ball.x = ball.radius;
+                ball.dx = -ball.dx;
+            }
+            if (ball.x >= canvas.width - ball.radius) {
+                ball.x = canvas.width - ball.radius;
+                ball.dx = -ball.dx;
+            }
+        }
+
+        function checkPlayerCollision(playerObj) {
+            const dx = ball.x - playerObj.x;
+            const dy = ball.y - playerObj.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < ball.radius + playerObj.radius) {
+                // Calculate collision angle
+                const angle = Math.atan2(dy, dx);
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                
+                // Reflect ball
+                ball.dx = Math.cos(angle) * speed * 1.1;
+                ball.dy = Math.sin(angle) * speed * 1.1;
+                
+                // Add some randomness
+                ball.dx += (Math.random() - 0.5) * 2;
+                ball.dy += (Math.random() - 0.5) * 2;
+                
+                // Limit speed
+                const maxSpeed = 8;
+                const currentSpeed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                if (currentSpeed > maxSpeed) {
+                    ball.dx = (ball.dx / currentSpeed) * maxSpeed;
+                    ball.dy = (ball.dy / currentSpeed) * maxSpeed;
+                }
+                
+                createParticles(ball.x, ball.y);
+            }
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * (3 + Math.random() * 2);
+            ball.dy = (Math.random() - 0.5) * 4;
+            ball.trail = [];
+        }
+
+        let particles = [];
+        
+        function createParticles(x, y) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    dx: (Math.random() - 0.5) * 8,
+                    dy: (Math.random() - 0.5) * 8,
+                    life: 1,
+                    decay: 0.02
+                });
+            }
+        }
+
+        function updateParticles() {
+            particles = particles.filter(p => {
+                p.x += p.dx;
+                p.y += p.dy;
+                p.life -= p.decay;
+                
+                if (p.life > 0) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 255, 255, ${p.life})`;
+                    ctx.fill();
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        function showGoalEffect() {
+            // Flash effect
+            canvas.style.filter = 'brightness(2)';
+            setTimeout(() => {
+                canvas.style.filter = 'brightness(1)';
+            }, 200);
+            
+            // Create goal particles
+            for (let i = 0; i < 50; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    dx: (Math.random() - 0.5) * 15,
+                    dy: (Math.random() - 0.5) * 15,
+                    life: 1,
+                    decay: 0.01
+                });
+            }
+        }
+
+        function updateScore() {
+            document.getElementById('playerScore').textContent = playerScore;
+            document.getElementById('aiScore').textContent = aiScore;
+            
+            if (playerScore >= WINNING_SCORE || aiScore >= WINNING_SCORE) {
+                gameRunning = false;
+                setTimeout(() => {
+                    alert(playerScore >= WINNING_SCORE ? 'شما برنده شدید! 🎉' : 'کامپیوتر برنده شد! 😅');
+                }, 100);
+            }
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawField();
+            drawBallTrail();
+            updatePlayer();
+            updateAI();
+            updateBall();
+            updateParticles();
+            
+            drawCircle(player);
+            drawCircle(ai);
+            drawCircle(ball);
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Game controls
+        document.getElementById('startBtn').addEventListener('click', () => {
+            gameRunning = true;
+            gameLoop();
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            gameRunning = false;
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            gameRunning = false;
+            playerScore = 0;
+            aiScore = 0;
+            updateScore();
+            resetBall();
+            player.x = 100;
+            player.y = 200;
+            ai.x = 700;
+            ai.y = 200;
+            particles = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawField();
+            drawCircle(player);
+            drawCircle(ai);
+            drawCircle(ball);
+        });
+
+        // Initialize game
+        drawField();
+        drawCircle(player);
+        drawCircle(ai);
+        drawCircle(ball);
+        updateScore();
     </script>
 </body>
 </html>
